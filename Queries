@@ -1,0 +1,107 @@
+/* What is the average session time? */
+
+CREATE VIEW Average_Session_Time AS 
+SELECT AVG(timestampdiff(hour,Session_Start,Session_End))
+FROM SessionLog; 
+
+
+
+
+/* what devices need to be replaced? */
+
+CREATE VIEW Expired_Devices AS
+    SELECT
+        D.Device_MAC_Address, D.Device_Type, D.Location, date_add(D.Installed_Date, INTERVAL DT.Device_Lifetime DAY) AS 'Expiration Date'
+    FROM Device AS D
+        JOIN
+        DeviceType AS DT ON D.Device_Type = DT.Device_Type
+    WHERE
+        DATE_ADD(D.Installed_Date, INTERVAL DT.Device_Lifetime DAY) <= current_date();
+
+
+/* What is the average time for tickets to be closed?*/
+
+SELECT
+    AVG(TIMESTAMPDIFF(day, Open_Time, Close_Time)) as 'Average Hours Required to Close Tickets'
+FROM
+    Ticket;
+
+
+
+/* How Many Tickets are Opened Each Month? */
+
+SELECT
+    COUNT(Ticket_Id) AS TicketCount,
+    MONTHNAME(Open_Time) AS MName,
+    YEAR(Open_Time) AS TicketYear
+FROM Ticket    
+GROUP BY TicketYear,
+         MONTH(Open_Time),
+         MName
+ORDER BY TicketYear  ASC,
+         MONTH(Open_Time) ASC;
+
+/* How much money have we spent in a given year? */
+delimiter //
+CREATE Procedure Money_Spent_In_Year (IN inYear VARCHAR(4))
+BEGIN
+    SELECT SUM(Purchase_Cost) AS Year
+        FROM PurchaseOrder
+    WHERE Year(Purchase_Date) = inYear
+END //
+delimiter ;
+
+
+/* How many employees are on a given team? */
+delimiter //
+CREATE PROCEDURE Employees_Per_Group(IN inGroup_ID SMALLINT)
+BEGIN
+SELECT EGA.Group_ID,
+COUNT(E.Person_ID) AS 'Number of Employees'
+ FROM EngineerGroupAssignment AS EGA
+     JOIN
+ Employee AS E ON EGA.Person_ID = E.Person_ID
+ WHERE Group_ID = inGroup_ID
+ GROUP BY EGA.Group_ID
+ ORDER BY Group_ID;
+ END//
+ delimiter ;
+
+/* What Group is an Engineer Assigned to? */
+
+SELECT EGA.Person_Id,
+       EGA.Group_Id,
+       CONCAT(P.Person_Fname, ' ',P.Person_Lname) AS EmployeeName,
+       EG.Device_Group_Description
+FROM EngineerGroupAssignment AS EGA
+    JOIN
+Person AS P ON EGA.Person_Id = P.Person_Id
+    JOIN
+EngineerGroup AS EG ON EG.Group_Id = EGA.Group_Id;
+
+/* How many users are currently associated? */
+SELECT COUNT(Session_Start)
+FROM SessionLog
+WHERE Session_End IS NULL;
+
+
+/* How many of a given device type are there? */
+
+delimiter //
+CREATE procedure Device_Type_Count (IN inType VARCHAR(20))
+BEGIN
+    SELECT
+        COUNT(Device_Type)
+    FROM
+        Device
+    WHERE Device_Type = inType;
+END //
+delimiter ;
+  
+
+/* What is the Average Age of Employees? */
+SELECT
+    AVG(YEAR(CURDATE())-YEAR(Person_DOB)) AS EmployeeAge
+FROM Person
+WHERE Person_Is_Employee = 'Y'
+ORDER BY EmployeeAge ASC;
