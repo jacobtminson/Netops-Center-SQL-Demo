@@ -1,0 +1,138 @@
+CREATE TABLE Person (
+    Person_ID             INT             NOT NULL AUTO_INCREMENT,
+    Person_Fname         VARCHAR(25)     NOT NULL,
+    Person_Lname         VARCHAR(25)     NOT NULL,
+    Person_DOB             DATE             NOT NULL,
+    Person_Is_User         CHAR(1)         NOT NULL DEFAULT 'Y',
+    Person_Is_Employee     CHAR(1)         NOT NULL DEFAULT 'N',
+    CONSTRAINT PK_Person_Person_ID PRIMARY KEY (Person_ID),
+    CONSTRAINT CHECK_Person_Person_Is_User CHECK (Person_Is_User IN ('Y' , 'N')),
+    CONSTRAINT CHECK_Person_Person_Is_Employee CHECK (Person_Is_Employee IN ('Y' , 'N'))
+);
+
+CREATE TABLE Authority (
+    Authority_Level         DECIMAL(5 , 2 ) NOT NULL,
+    Authority_Description     VARCHAR(100)     NOT NULL,
+    CONSTRAINT PK_Authority_Authority_Level PRIMARY KEY (Authority_Level)
+);
+
+
+CREATE TABLE Employee (
+    Person_ID                 INT                 NOT NULL,
+    Group_Assignment_ID     INT                 NOT NULL,
+    Authority_Level         DECIMAL(5 , 2 )     NOT NULL,
+    Employee_Hire_Date         DATE                 NOT NULL,
+    CONSTRAINT PK_Employee_Person_ID PRIMARY KEY (Person_ID),
+    CONSTRAINT FK_Employee_Person_ID FOREIGN KEY (Person_ID) REFERENCES Person (Person_ID),
+    CONSTRAINT FK_Employee_Authority_Level FOREIGN KEY (Authority_Level) REFERENCES Authority (Authority_Level)
+);
+
+
+CREATE TABLE DeviceGroup (
+    Device_Group_ID             SMALLINT        NOT NULL AUTO_INCREMENT,
+    Device_Group_Description     VARCHAR(100)     NOT NULL,
+    CONSTRAINT PK_DeviceGroup_Device_Group_ID PRIMARY KEY (Device_Group_ID)
+);
+
+
+CREATE TABLE EngineerGroup (
+    Group_ID             SMALLINT     NOT NULL AUTO_INCREMENT,
+    Device_Group_ID     SMALLINT     NOT NULL,
+    Device_Group_Description    varchar(100)  NOT NULL,
+    CONSTRAINT PK_EngineerGroup_Group_ID PRIMARY KEY (Group_ID),
+    CONSTRAINT FK_EngineerGroup_Device_Group_ID FOREIGN KEY (Device_Group_ID)
+        REFERENCES DeviceGroup (Device_Group_ID)
+    );
+
+CREATE TABLE EngineerGroupAssignment (
+    Assignment_ID         INT         NOT NULL AUTO_INCREMENT,
+    Person_ID             INT         NOT NULL,
+    Group_ID             SMALLINT     NOT NULL,
+    Assignment_date     DATE         NOT NULL,
+    CONSTRAINT PK_EngineerGroupAssignment_Assignment_ID PRIMARY KEY (Assignment_ID),
+    CONSTRAINT FK_EngineerGroupAssignment_Person_ID FOREIGN KEY (Person_ID) REFERENCES Employee (Person_ID),
+    CONSTRAINT FK_EngineerGroupAssignment_Group_ID FOREIGN KEY (Group_ID)
+    REFERENCES EngineerGroup (Group_ID)
+);
+
+CREATE TABLE Permission (
+Permission_Level tinyint NOT NULL AUTO_INCREMENT,
+Permission_Desc  text     NOT NULL,
+CONSTRAINT PK_Permission_Permission_Level PRIMARY KEY (Permission_Level)
+);
+
+
+
+CREATE TABLE Users
+(
+Person_ID        INT                NOT NULL,
+Join_Date        DATETIME         NOT NULL    DEFAULT (CURRENT_DATE()),
+CONSTRAINT PK_User_Person_ID PRIMARY KEY (Person_ID),
+CONSTRAINT FK_User_Person_ID FOREIGN KEY (Person_ID) REFERENCES Person (Person_ID)
+);
+
+CREATE TABLE Clients (
+Client_MAC_Address       varchar(25) NOT NULL,
+Permission_Level         tinyint     NOT NULL,
+Associated                 char(1)      NOT NULL,
+Person_ID              int NOT NULL,
+CONSTRAINT PK_Client_Client_MAC_Address PRIMARY KEY (Client_MAC_Address),
+CONSTRAINT FK_Client_Person_ID FOREIGN KEY (Person_ID) REFERENCES Person (Person_ID),
+Constraint FK_Client_Permission_Level FOREIGN KEY (Permission_Level) REFERENCES Permission (Permission_Level)
+);
+
+CREATE TABLE DeviceType (
+    Device_Type VARCHAR(25) NOT NULL,
+    Device_Lifetime INT NOT NULL,
+    CONSTRAINT PK_DeviceType_Device_Type PRIMARY KEY (Device_Type)
+);
+
+
+CREATE TABLE Device
+( Device_MAC_Address    VARCHAR(25) NOT NULL,
+  Device_Type            VARCHAR(25) NOT NULL,
+  Device_Group_ID        SMALLINT NOT NULL,
+  DNS_Name                VARCHAR(25) NOT NULL,
+  Location                VARCHAR(25) NOT NULL,
+  Serial_No                VARCHAR(25) NOT NULL,
+  Installed_Date        DATE,
+  CONSTRAINT PK_Device_Device_MAC_Address PRIMARY KEY (Device_MAC_Address),
+  CONSTRAINT FK_Device_Device_Type FOREIGN KEY (Device_Type) REFERENCES DeviceType (Device_Type),
+  CONSTRAINT FK_Device_Group_ID FOREIGN KEY (Device_Group_ID) REFERENCES DeviceGroup (Device_Group_ID)
+  );
+
+
+CREATE TABLE SessionLog
+( Session_Start            DATETIME NOT NULL,
+  Client_MAC_Address     VARCHAR(25) NOT NULL,
+  Device_MAC_Address    VARCHAR(25) NOT NULL,
+  Session_End            DATETIME DEFAULT NULL,
+  CONSTRAINT PK_SessionLog_Composite_Key PRIMARY KEY (Session_Start, Client_MAC_Address, Device_MAC_Address),
+  CONSTRAINT FK_SessionLog_Client_MAC_Address FOREIGN KEY (Client_MAC_Address) REFERENCES Clients (Client_MAC_Address),
+  CONSTRAINT FK_SessionLog_Device_MAC_Address FOREIGN KEY (Device_MAC_Address) REFERENCES Device (Device_MAC_Address)
+);
+
+ 
+ 
+
+CREATE TABLE Ticket (
+    Ticket_ID  INT         NOT NULL auto_increment,
+    Open_Person_ID  INT         NOT NULL,
+    Employee_Person_ID  INT NOT NULL,
+    Open_Time  DATETIME NOT NULL,
+    Close_Time DATETIME DEFAULT NULL,
+    CONSTRAINT PK_Ticket_Ticket_ID PRIMARY KEY (Ticket_ID),
+    CONSTRAINT FK_Ticket_Employee_Person_ID FOREIGN KEY (Employee_Person_ID) REFERENCES Employee (Person_ID),
+    CONSTRAINT FK_Ticket_Open_Person_ID FOREIGN KEY (Open_Person_ID) REFERENCES Person (Person_ID)
+);
+
+CREATE TABLE PurchaseOrder (
+    PO_ID        INT        NOT NULL auto_increment,
+    Person_ID  INT NOT NULL,
+    Approve_Person_ID        INT NOT NULL,
+    Purchase_Date        DATE NOT NULL,
+    Purchase_Cost        DECIMAL(11,2),
+    CONSTRAINT PK_PurchaseOrder_PO_ID PRIMARY KEY (PO_ID),
+    CONSTRAINT FK_PurchaseOrder_Person_ID foreign key (Person_ID) REFERENCES Employee (Person_ID),
+    CONSTRAINT FK_PurchaseOrder_Approve_Person_ID  FOREIGN KEY (Approve_Person_ID) REFERENCES Employee (Person_ID)
+);
